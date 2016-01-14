@@ -1,0 +1,12 @@
+[submodule "elasticsearch"]
+	path = elasticsearch
+	url = https://github.com/yep/usergrid-elasticsearch
+[submodule "java"]
+	path = java
+	url = https://github.com/yep/usergrid-java
+[submodule "cassandra"]
+	path = cassandra
+	url = https://github.com/yep/usergrid-cassandra
+[submodule "portal"]
+	path = portal
+	url = https://github.com/yep/usergrid-portal

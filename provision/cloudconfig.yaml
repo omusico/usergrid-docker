@@ -1,0 +1,81 @@
+#cloud-config
+#
+# cloud config documentation is at:
+# https://coreos.com/os/docs/latest/cloud-config.html
+#
+# attached storage documentation is at:
+# https://coreos.com/os/docs/latest/mounting-storage.html
+
+coreos:
+  update:
+    reboot-strategy: off
+  units:
+    - name: format-instance.service
+      command: start
+      content: |
+        [Unit]
+        Description=Format instance storage disc
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/usr/sbin/mkfs.ext4 /dev/xvdb
+    - name: media-instance.mount
+      command: start
+      content: |
+        [Unit]
+        Description=Mount instance storage disc to /media/instance
+        Requires=format-instance.service
+        After=format-instance.service
+        Before=docker.service
+        [Mount]
+        What=/dev/xvdb
+        Where=/media/instance
+        Type=ext4
+    - name: format-data.service
+      command: start
+      content: |
+        [Unit]
+        Description=Format data disc
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/usr/sbin/mkfs -t ext4 /dev/xvdf
+    - name: media-data.mount
+      command: start
+      content: |
+        [Unit]
+        Description=Mount data disc to /media/data
+        Requires=format-data.service
+        After=format-data.service
+        Before=docker.service
+        [Mount]
+        What=/dev/xvdf
+        Where=/media/data
+        Type=ext4
+    - name: settimezone.service
+      command: start
+      content: |
+        [Unit]
+        Description=Set the timezone
+        [Service]
+        ExecStart=/usr/bin/timedatectl set-timezone Europe/Berlin
+        RemainAfterExit=yes
+        Type=oneshot
+write_files:
+  - path: /etc/ntp.conf
+    content: |
+      # see https://coreos.com/docs/cluster-management/setup/configuring-date-and-timezone/#automating-with-cloud-config
+      server 0.pool.ntp.org
+      server 1.pool.ntp.org
+      server 2.pool.ntp.org
+      server 3.pool.ntp.org
+
+      # - Allow only time queries, at a limited rate.
+      # - Allow all local queries (IPv4, IPv6)
+      restrict default nomodify nopeer noquery limited kod
+      restrict 127.0.0.1
+      restrict [::1]
+  - path: /etc/systemd/timesyncd.conf
+    content: |
+      [Time]
+      NTP=0.pool.ntp.org 1.pool.ntp.org 2.pool.ntp.org 3.pool.ntp.org
